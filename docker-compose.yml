@@ -1,0 +1,22 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports: ["8000:8000"]
+    environment:
+      DATABASE_URL: sqlite:////data/nexora.db   # prod: postgresql+psycopg://user:pass@db:5432/nexora
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      SEED_DEMO: ${SEED_DEMO:-1}                 # set 0 in production
+    volumes:
+      - nexora-data:/data
+    restart: unless-stopped
+  # Production database (uncomment for prod):
+  # db:
+  #   image: postgres:16
+  #   environment:
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD}
+  #   volumes: [ "pg-data:/var/lib/postgresql/data" ]
+volumes:
+  nexora-data:
+  # pg-data:

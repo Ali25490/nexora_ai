@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NEXORA AI — Executive Analytics</title>
+<style>
+:root{--bg:#0d1117;--surface:#161b26;--surface2:#1c2230;--border:#262d3d;--text:#e6e9f0;
+--muted:#8b93a7;--accent:#f2762e;--accent2:#ff9a5c;--green:#3fb96f;--red:#e5534b;--blue:#4f8ef7;--purple:#9d6bf3;
+--sidebar-w:230px;}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font:14px/1.45 "Inter","Segoe UI",system-ui,sans-serif}
+a{color:var(--accent2);text-decoration:none;background:none}
+button{font-family:inherit}
+::selection{background:rgba(242,118,46,.35)}
+/* Layout shell: sidebar fixed-width + fluid main, no overlap */
+#app{display:flex;min-height:100vh;width:100%}
+#sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);
+padding:16px 10px;flex:0 0 var(--sidebar-w);position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;
+transition:flex-basis .18s ease,width .18s ease}
+.logo{font-weight:800;font-size:17px;color:var(--accent);padding:4px 10px 16px;display:flex;gap:8px;align-items:center;white-space:nowrap}
+.nav-h{font-size:10px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;padding:14px 10px 5px;white-space:nowrap}
+.nav-item{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;color:var(--muted);
+cursor:pointer;font-size:13px;white-space:nowrap;overflow:hidden;border-left:2px solid transparent}
+.nav-item span{overflow:hidden;text-overflow:ellipsis}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:rgba(242,118,46,.12);color:var(--accent2);border-left:2px solid var(--accent)}
+/* collapsed (icon rail) */
+#app.collapsed #sidebar{flex-basis:60px;width:60px}
+#app.collapsed .nav-item span,#app.collapsed .nav-h,#app.collapsed .logo span{display:none}
+#app.collapsed .nav-item{justify-content:center;padding:10px 0}
+/* Main: fluid, min-width:0 prevents grid blowout past viewport */
+#main{flex:1 1 auto;min-width:0;padding:18px 24px;max-width:100%}
+.topbar{display:flex;gap:12px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.topbar select,.topbar input{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:13px}
+.topbar input[type=date]{color-scheme:dark}
+.icon-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;
+padding:7px 10px;cursor:pointer;font-size:14px;line-height:1}
+.spacer{flex:1}
+.refresh-note{font-size:11px;color:var(--muted)}
+/* Dashboard grid: rows defined by content, cards never overlap or leave viewport */
+.grid{display:grid;gap:14px;width:100%}
+.grid>*{min-width:0}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.cols{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.cols3{grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))}
+@media(max-width:1024px){.cols{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;min-width:0;overflow:hidden}
+.card h3{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.kpi-val{font-size:26px;font-weight:800;letter-spacing:-.02em;word-break:break-word}
+.kpi-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.delta-up{color:var(--green)}.delta-down{color:var(--red)}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--surface2);border:1px solid var(--border)}
+.badge.high{color:var(--red);border-color:var(--red)}
+.badge.medium{color:var(--accent2);border-color:var(--accent)}
+.badge.low{color:var(--muted)}
+.btn{background:var(--accent);border:none;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px}
+.btn.ghost{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.55;cursor:not-allowed;filter:none}
+/* tables: horizontal scroll INSIDE the card on narrow screens */
+.table-wrap{overflow-x:auto;margin:0 -16px;padding:0 16px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:420px}
+.table-wrap table{min-width:max(420px,100%)}
+th{color:var(--muted);text-align:left;font-weight:600;padding:8px;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+td{padding:8px;border-bottom:1px solid var(--border)}
+tr.clickable{cursor:pointer}
+tr.clickable:hover td{background:var(--surface2)}
+.bar-row{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:12px;min-width:0}
+.bar-row .lbl{width:110px;flex:0 0 110px;color:var(--muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{height:16px;border-radius:4px;background:var(--accent)}
+.bar-track{flex:1;background:var(--surface2);border-radius:4px;min-width:0}
+.bar-val{width:64px;flex:0 0 64px;color:var(--muted);text-align:right}
+#login-wrap{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:15vh 16px 0}
+#login-wrap .card{width:340px;max-width:100%}
+canvas{display:block;max-width:100%}
+.chart-box{position:relative;width:100%;min-width:0}
+#rev-chart{width:100%;height:280px}
+#fc{width:100%;height:280px}
+/* donut + legend: flex layout, no absolute positioning */
+.seg-flex{display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:center}
+.seg-flex canvas{width:180px;height:180px;flex:0 0 auto}
+.seg-legend{flex:1;min-width:150px;display:flex;flex-direction:column;gap:6px}
+.seg-legend .bar-row{margin:0}
+.seg-dot{width:10px;height:10px;border-radius:3px;flex:0 0 10px}
+.ai-card{border-color:var(--accent)}
+.muted{color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.conf-bar{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-top:4px}
+.conf-fill{height:100%;background:var(--accent)}
+.chat-log{max-height:260px;overflow:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.chat-msg{background:var(--surface2);border-radius:8px;padding:8px 10px;font-size:13px}
+.chat-msg.user{border-left:2px solid var(--accent)}
+.hidden{display:none!important}
+.err{color:var(--red);font-size:13px}
+.empty-state{padding:22px 10px;text-align:center;color:var(--muted)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--muted);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+/* Mobile: icon rail, content never clipped; cards stack */
+@media(max-width:760px){
+  #main{padding:14px 12px}
+  .bar-row .lbl{width:84px;flex-basis:84px}
+  .kpi-val{font-size:22px}
+}
+</style>
+</head>
+<body>
+<div id="app" class="hidden">
+<nav id="sidebar" aria-label="Primary">
+  <div class="logo">◆ <span>NEXORA AI</span></div>
+  <div class="nav-h">Analytics</div>
+  <div class="nav-item active" data-page="overview">📊 <span>Overview</span></div>
+  <div class="nav-item" data-page="explore">🔍 <span>Explore</span></div>
+  <div class="nav-item" data-page="cohorts">👥 <span>Cohorts</span></div>
+  <div class="nav-h">AI &amp; Insights</div>
+  <div class="nav-item" data-page="anomalies">⚠️ <span>Anomalies</span></div>
+  <div class="nav-item" data-page="forecast">📈 <span>Forecasting</span></div>
+  <div class="nav-item" data-page="ask">✨ <span>Ask AI</span></div>
+  <div class="nav-h">Finance</div>
+  <div class="nav-item" data-page="finance">💰 <span>P&amp;L / Budget</span></div>
+  <div class="nav-item" data-page="whatif">🧪 <span>What-if</span></div>
+  <div class="nav-item" data-page="cash">🏦 <span>Cash Flow</span></div>
+  <div class="nav-h">Data</div>
+  <div class="nav-item" data-page="import">📥 <span>Import</span></div>
+  <div class="nav-item" data-page="quality">🛡️ <span>Data Quality</span></div>
+  <div class="nav-h">Dashboards</div>
+  <div class="nav-item" data-page="dash-manager">🧭 <span>Manager</span></div>
+  <div class="nav-item" data-page="dash-top">🏢 <span>Top Manager</span></div>
+  <div class="nav-item" data-page="dash-owner">👑 <span>Owner</span></div>
+  <div class="nav-h">Finance Ops</div>
+  <div class="nav-item" data-page="approvals">✍️ <span>Approvals</span></div>
+  <div class="nav-item" data-page="arap">🧾 <span>AR / AP</span></div>
+  <div class="nav-item" data-page="scenarios">🧪 <span>Scenarios</span></div>
+  <div class="nav-item" data-page="reports">📄 <span>Reports</span></div>
+  <div class="nav-h">Config</div>
+  <div class="nav-item" data-page="alerts">🔔 <span>Alerts</span></div>
+  <div class="nav-item" data-page="tasks">✅ <span>Tasks</span></div>
+  <div class="nav-item" data-page="metrics">📐 <span>Metrics</span></div>
+  <div class="nav-item" data-page="team">🧑‍🤝‍🧑 <span>Team</span></div>
+  <div class="nav-item" data-page="billing">💳 <span>Billing</span></div>
+  <div class="nav-item" data-page="admin">🛠️ <span>Admin</span></div>
+</nav>
+<main id="main">
+  <div class="topbar">
+    <button class="icon-btn" id="side-toggle" title="Collapse / expand sidebar" aria-label="Toggle sidebar">☰</button>
+    <select id="org-select" aria-label="Organization"></select>
+    <input type="date" id="date-start" aria-label="Start date"><input type="date" id="date-end" aria-label="End date">
+    <button class="btn ghost" id="apply-range">Apply</button>
+    <span class="refresh-note" id="refresh-note"></span>
+    <div class="spacer"></div>
+    <span class="badge" id="user-badge"></span>
+    <button class="btn ghost" id="logout">Logout</button>
+  </div>
+  <div id="page"></div>
+</main>
+</div>
+<div id="login-wrap">
+  <div class="card">
+    <h3 style="font-size:18px;color:var(--text)">◆ NEXORA AI</h3>
+    <div id="login-err" class="err" role="alert"></div>
+    <div class="row" style="flex-direction:column;align-items:stretch;gap:10px;margin-top:10px">
+      <input id="login-email" placeholder="email" value="admin@nexora.ai" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px">
+      <input id="login-pass" type="password" placeholder="password" value="admin123" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px">
+      <button class="btn" id="login-btn">Sign in</button>
+      <div class="muted" style="font-size:12px">Demo account: admin@nexora.ai / admin123 (sample data, replace in production)</div>
+    </div>
+  </div>
+</div>
+<script src="/static/app.js"></script>
+<script src="/static/roles.js"></script>
+</body>
+</html>
